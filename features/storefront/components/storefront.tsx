@@ -157,7 +157,6 @@ export function Storefront({
               fill
               priority
               sizes="(max-width: 768px) 100vw, 56vw"
-              unoptimized
             />
             <div className="from-forest/35 to-forest/5 absolute inset-0 bg-gradient-to-t via-transparent" />
             <div className="absolute inset-x-5 bottom-5 flex items-end justify-between text-[9px] font-semibold tracking-[0.16em] text-white sm:inset-x-7 sm:bottom-7">

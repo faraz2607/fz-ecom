@@ -514,6 +514,7 @@ export function AdminDashboard({
                                 alt=""
                                 width={44}
                                 height={44}
+                                sizes="44px"
                               />
                               <span>
                                 <strong className="block max-w-52 truncate text-xs font-semibold">
