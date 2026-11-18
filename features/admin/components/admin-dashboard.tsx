@@ -1,8 +1,20 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
+import {
+  FiArrowLeft,
+  FiArrowRight,
+  FiArrowUpRight,
+  FiBox,
+  FiHeart,
+  FiPlus,
+  FiSearch,
+  FiX,
+} from "react-icons/fi";
+import { CustomSelect } from "@/components/common/custom-select";
+import { ProductImage } from "@/components/common/product-image";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { BRAND } from "@/config/brand";
 import type { Product, ProductInput } from "@/features/products/types/product";
 import type { CatalogOptions } from "@/features/products/types/catalog-options";
@@ -38,6 +50,7 @@ export function AdminDashboard({
   const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All categories");
+  const [badgeFilter, setBadgeFilter] = useState("All badges");
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<
     (ProductInput & { id: string; createdAt: string }) | null
@@ -49,6 +62,7 @@ export function AdminDashboard({
   const [manageOptions, setManageOptions] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkPercent, setBulkPercent] = useState("");
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const categories = ["All categories", ...catalogOptions.categories];
   const filtered = useMemo(
@@ -56,9 +70,12 @@ export function AdminDashboard({
       products.filter(
         (product) =>
           (filter === "All categories" || product.category === filter) &&
-          product.name.toLowerCase().includes(search.toLowerCase()),
+          (badgeFilter === "All badges" || product.badge === badgeFilter) &&
+          `${product.productCode ?? ""} ${product.name} ${product.category} ${product.badge}`
+            .toLowerCase()
+            .includes(search.toLowerCase()),
       ),
-    [products, filter, search],
+    [products, filter, badgeFilter, search],
   );
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -121,8 +138,6 @@ export function AdminDashboard({
   }
 
   async function removeProduct(product: Product) {
-    if (!window.confirm(`Remove â€œ${product.name}â€ from your catalog?`))
-      return;
     const response = await fetch(`/api/products/${product.id}`, {
       method: "DELETE",
     });
@@ -200,7 +215,12 @@ export function AdminDashboard({
           <span className="bg-forest text-leaf grid size-9 place-items-center rounded-xl text-[10px] font-bold">
             {BRAND.shortName}
           </span>
-          <span className="font-display text-xl">{BRAND.name}</span>
+          <span className="font-display text-xl">
+            <span className="text-forest">{BRAND.name.split(" ")[0]}</span>{" "}
+            <span className="text-leaf">
+              {BRAND.name.split(" ").slice(1).join(" ")}
+            </span>
+          </span>
         </Link>
         <nav
           className="hidden space-y-1 lg:block"
@@ -213,14 +233,16 @@ export function AdminDashboard({
             className="bg-forest flex items-center gap-3 rounded-xl px-3 py-3 text-xs font-semibold text-white"
             href="/admin"
           >
-            <span>â–¦</span>Product catalog
+            <FiBox aria-hidden="true" />
+            Product catalog
           </Link>
           <Link
             className="text-muted hover:bg-paper hover:text-forest flex items-center gap-3 rounded-xl px-3 py-3 text-xs font-medium transition-colors"
             href="/"
             target="_blank"
           >
-            <span>â†—</span>View storefront
+            <FiArrowUpRight aria-hidden="true" />
+            View storefront
           </Link>
         </nav>
         <div className="border-line hidden items-center gap-3 border-t pt-5 lg:flex">
@@ -228,7 +250,7 @@ export function AdminDashboard({
             {BRAND.name.charAt(0).toUpperCase()}
           </span>
           <span className="min-w-0 flex-1">
-            <strong className="block truncate text-xs">{BRAND.name}</strong>
+            <strong className="block truncate text-xs"><span className="text-forest">{BRAND.name.split(" ")[0]}</span>{" "}<span className="text-leaf">{BRAND.name.split(" ").slice(1).join(" ")}</span></strong>
             <small className="text-muted mt-0.5 block text-[10px]">
               Store administrator
             </small>
@@ -238,7 +260,7 @@ export function AdminDashboard({
             aria-label="Sign out"
             onClick={logout}
           >
-            â†ª
+            <FiX aria-hidden="true" />
           </button>
         </div>
         <button
@@ -262,10 +284,7 @@ export function AdminDashboard({
             href="/"
             target="_blank"
           >
-            View your shop{" "}
-            <span className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
-              â†—
-            </span>
+            View your shop <FiArrowUpRight aria-hidden="true" />
           </Link>
         </header>
 
@@ -276,24 +295,27 @@ export function AdminDashboard({
                 YOUR LITTLE SPACE, LOOKING LOVELY
               </span>
               <h1 className="font-display mt-2 text-4xl tracking-tight sm:text-5xl">
+                <FiBox className="text-forest mr-2 inline" aria-hidden="true" />
                 Product catalog
               </h1>
               <p className="text-muted mt-2 text-xs sm:text-sm">
-                Keep your collection feeling fresh and full of good things.
+                Manage fabric listings, pricing, and availability.
               </p>
             </div>
-            <button
-              className="border-line text-forest hover:border-forest hover:bg-leaf/30 h-11 rounded-full border px-5 text-xs font-semibold transition"
-              onClick={() => setManageOptions(true)}
-            >
-              Manage categories & badges
-            </button>
-            <button
-              className="group bg-forest hover:bg-ink hover:shadow-forest/15 inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-xs font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98]"
-              onClick={() => openEditor()}
-            >
-              <span className="text-leaf text-base">ï¼‹</span>Add a product
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="border-ink/35 text-forest hover:border-forest hover:bg-leaf/30 h-11 rounded-full border px-4 text-xs font-semibold transition"
+                onClick={() => setManageOptions(true)}
+              >
+                Manage categories & badges
+              </button>
+              <button
+                className="group bg-forest hover:bg-ink hover:shadow-forest/15 inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-xs font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98]"
+                onClick={() => openEditor()}
+              >
+                <FiPlus className="text-leaf" aria-hidden="true" /> Add a product
+              </button>
+            </div>
           </div>
 
           <div className="mb-6 grid gap-3 sm:grid-cols-3">
@@ -324,7 +346,7 @@ export function AdminDashboard({
             </div>
             <div className="bg-leaf/65 flex min-h-28 flex-col justify-between rounded-2xl p-4 sm:p-5">
               <span className="text-forest text-[9px] font-bold tracking-[0.15em]">
-                âœ³ A LITTLE REMINDER
+                A LITTLE REMINDER
               </span>
               <strong className="font-display mt-4 text-xl">
                 Good finds deserve a fresh look.
@@ -345,16 +367,16 @@ export function AdminDashboard({
                   </span>
                 </h2>
                 <p className="text-muted mt-1 text-[10px] sm:text-xs">
-                  Every lovely thing in one place.
+                  Search and manage your catalog.
                 </p>
               </div>
               <div className="flex gap-2">
                 <label className="border-line text-muted focus-within:border-forest flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border px-3 sm:w-48 sm:flex-none">
-                  <span className="text-lg">âŒ•</span>
+                  <FiSearch aria-hidden="true" />
                   <input
                     className="text-ink placeholder:text-muted min-w-0 flex-1 bg-transparent text-[11px] outline-none"
-                    aria-label="Search products"
-                    placeholder="Search products"
+                    aria-label="Search name or product ID"
+                    placeholder="Search name or product ID"
                     value={search}
                     onChange={(event) => {
                       setSearch(event.target.value);
@@ -362,7 +384,7 @@ export function AdminDashboard({
                     }}
                   />
                 </label>
-                <select
+                <CustomSelect
                   className="border-line text-ink focus:border-forest h-10 max-w-36 rounded-full border bg-white px-3 text-[10px] outline-none sm:max-w-none sm:text-xs"
                   aria-label="Filter category"
                   value={filter}
@@ -374,7 +396,22 @@ export function AdminDashboard({
                   {categories.map((item) => (
                     <option key={item}>{item}</option>
                   ))}
-                </select>
+                </CustomSelect>
+                <CustomSelect
+                  className="border-line text-ink h-10 max-w-36 rounded-full border bg-white px-3 text-[10px] sm:text-xs"
+                  aria-label="Filter badge"
+                  value={badgeFilter}
+                  onChange={(event) => {
+                    setBadgeFilter(event.target.value);
+                    setPage(1);
+                  }}
+                >
+                  {["All badges", ...catalogOptions.badges].map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </CustomSelect>
               </div>
             </div>
 
@@ -383,13 +420,13 @@ export function AdminDashboard({
                 className="bg-leaf/35 text-forest mx-4 mt-4 flex items-center justify-between rounded-xl px-4 py-3 text-xs sm:mx-6"
                 role="status"
               >
-                âœ³ {notice}
+                {notice}
                 <button
                   className="ml-3 text-base"
                   onClick={() => setNotice("")}
                   aria-label="Dismiss"
                 >
-                  Ã—
+                  <FiX aria-hidden="true" />
                 </button>
               </p>
             )}
@@ -404,7 +441,7 @@ export function AdminDashboard({
                   onClick={() => setError("")}
                   aria-label="Dismiss"
                 >
-                  Ã—
+                  <FiX aria-hidden="true" />
                 </button>
               </p>
             )}
@@ -442,6 +479,7 @@ export function AdminDashboard({
                         <th className="pl-6">PRODUCT</th>
                         <th>CATEGORY</th>
                         <th>PRICE</th>
+                        <th>DISCOUNT</th>
                         <th>STATUS</th>
                         <th className="pr-6 text-right">ACTIONS</th>
                       </tr>
@@ -470,20 +508,20 @@ export function AdminDashboard({
                           </td>
                           <td className="py-3 pl-6">
                             <div className="flex items-center gap-3">
-                              <Image
+                              <ProductImage
                                 className="bg-paper size-11 rounded-xl object-cover"
                                 src={product.imageUrl}
                                 alt=""
                                 width={44}
                                 height={44}
-                                unoptimized
                               />
                               <span>
                                 <strong className="block max-w-52 truncate text-xs font-semibold">
                                   {product.name}
                                 </strong>
                                 <small className="text-muted mt-1 block text-[10px]">
-                                  {product.badge || "Everyday find"}
+                                  {product.productCode ?? "ET----"} ·{" "}
+                                  {product.badge || "No badge"}
                                 </small>
                               </span>
                             </div>
@@ -500,6 +538,9 @@ export function AdminDashboard({
                             <del className="text-muted mt-1 block text-[10px]">
                               {priceFormat.format(product.originalPrice)}
                             </del>
+                          </td>
+                          <td>
+                            <span className="text-forest rounded-full bg-leaf/35 px-2.5 py-1.5 text-[10px] font-bold">{product.discountPercent}% off</span>
                           </td>
                           <td>
                             <button
@@ -522,10 +563,10 @@ export function AdminDashboard({
                               </button>
                               <button
                                 className="border-line text-muted grid size-8 place-items-center rounded-full border text-lg transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-700"
-                                onClick={() => removeProduct(product)}
+                                onClick={() => setProductToDelete(product)}
                                 aria-label={`Delete ${product.name}`}
                               >
-                                Ã—
+                                <FiX aria-hidden="true" />
                               </button>
                             </div>
                           </td>
@@ -568,34 +609,37 @@ export function AdminDashboard({
                 <div className="border-line text-muted flex flex-col gap-3 border-t px-4 py-4 text-[10px] sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <span>
                     Showing{" "}
-                    {Math.min((page - 1) * pageSize + 1, filtered.length)}â€“
+                    {Math.min((page - 1) * pageSize + 1, filtered.length)}-
                     {Math.min(page * pageSize, filtered.length)} of{" "}
-                    {filtered.length} lovely finds
+                    {filtered.length} products
                   </span>
                   <div className="flex items-center justify-between gap-3 sm:justify-end">
                     <button
-                      className="border-line hover:border-forest rounded-full border px-3 py-2 transition-colors disabled:cursor-default disabled:opacity-40"
+                      className="border-ink/25 text-ink hover:border-forest hover:text-forest inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-2 transition-colors disabled:cursor-default disabled:bg-paper disabled:text-muted/70"
                       disabled={page <= 1}
                       onClick={() => setPage(page - 1)}
                     >
-                      â† Previous
+                      <FiArrowLeft className="shrink-0" aria-hidden="true" /> <span>Previous</span>
                     </button>
                     <span>
                       {page} / {pageCount}
                     </span>
                     <button
-                      className="border-line hover:border-forest rounded-full border px-3 py-2 transition-colors disabled:cursor-default disabled:opacity-40"
+                      className="border-ink/25 text-ink hover:border-forest hover:text-forest inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-2 transition-colors disabled:cursor-default disabled:bg-paper disabled:text-muted/70"
                       disabled={page >= pageCount}
                       onClick={() => setPage(page + 1)}
                     >
-                      Next â†’
+                      <span>Next</span> <FiArrowRight className="shrink-0" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
               </>
             ) : (
               <div className="px-5 py-14 text-center">
-                <span className="text-forest text-3xl">âœ³</span>
+                <FiBox
+                  className="text-forest mx-auto text-3xl"
+                  aria-hidden="true"
+                />
                 <h3 className="font-display mt-3 text-2xl">
                   No products found
                 </h3>
@@ -606,13 +650,14 @@ export function AdminDashboard({
                   className="bg-forest mt-5 rounded-full px-5 py-3 text-xs font-bold text-white transition-transform hover:-translate-y-0.5"
                   onClick={() => openEditor()}
                 >
-                  ï¼‹ Add a product
+                  <FiPlus aria-hidden="true" /> Add a product
                 </button>
               </div>
             )}
           </section>
           <footer className="text-muted py-7 text-center text-[10px]">
-            {BRAND.footerSignoff} <span className="text-forest">â™¡</span>
+            {BRAND.footerSignoff}{" "}
+            <FiHeart className="text-forest inline" aria-hidden="true" />
           </footer>
         </div>
       </section>
@@ -644,7 +689,7 @@ export function AdminDashboard({
                 onClick={() => setEditing(null)}
                 aria-label="Close"
               >
-                Ã—
+                <FiX aria-hidden="true" />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
@@ -663,7 +708,7 @@ export function AdminDashboard({
               </label>
               <label className="text-[10px] font-semibold">
                 Category
-                <select
+                <CustomSelect
                   className="border-line focus:border-forest mt-1.5 h-11 w-full rounded-xl border bg-white px-3 text-xs font-normal outline-none"
                   required
                   value={editing.category}
@@ -676,11 +721,11 @@ export function AdminDashboard({
                       {category}
                     </option>
                   ))}
-                </select>
+                </CustomSelect>
               </label>
               <label className="text-[10px] font-semibold">
                 Badge <span className="text-muted font-normal">optional</span>
-                <select
+                <CustomSelect
                   className="border-line focus:border-forest mt-1.5 h-11 w-full rounded-xl border bg-white px-3 text-xs font-normal outline-none"
                   value={editing.badge}
                   onChange={(event) =>
@@ -693,7 +738,7 @@ export function AdminDashboard({
                       {badge}
                     </option>
                   ))}
-                </select>
+                </CustomSelect>
               </label>
               <label className="text-[10px] font-semibold">
                 List price (₹)
@@ -745,44 +790,85 @@ export function AdminDashboard({
                 <input
                   className="border-line focus:border-forest mt-1.5 h-11 w-full rounded-xl border bg-white px-3 text-xs font-normal outline-none"
                   required
-                  type="url"
+                  type="text"
                   value={editing.imageUrl}
                   onChange={(event) =>
                     setEditing({ ...editing, imageUrl: event.target.value })
                   }
-                  placeholder="Public image URL or Google Drive link"
+                  placeholder="Public image URL or Google Drive share link"
                 />
+                <small className="text-muted mt-1 block font-normal">
+                  For Drive images, set General access to Anyone with the link
+                  (Viewer).
+                </small>
               </label>
               <div className="col-span-2 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[10px] font-semibold">Additional product images <span className="text-muted font-normal">(up to 5)</span></span>
+                  <span className="text-[10px] font-semibold">
+                    Additional product images{" "}
+                    <span className="text-muted font-normal">(up to 5)</span>
+                  </span>
                   {(editing.secondaryImageUrls?.length ?? 0) < 5 && (
                     <button
-                      className="text-forest rounded-full bg-leaf/40 px-3 py-2 text-[10px] font-semibold transition hover:bg-leaf/70"
+                      className="text-forest bg-leaf/40 hover:bg-leaf/70 rounded-full px-3 py-2 text-[10px] font-semibold transition"
                       type="button"
-                      onClick={() => setEditing({ ...editing, secondaryImageUrls: [...(editing.secondaryImageUrls ?? []), ""] })}
-                    >+ Add image</button>
+                      onClick={() =>
+                        setEditing({
+                          ...editing,
+                          secondaryImageUrls: [
+                            ...(editing.secondaryImageUrls ?? []),
+                            "",
+                          ],
+                        })
+                      }
+                    >
+                      + Add image
+                    </button>
                   )}
                 </div>
                 {(editing.secondaryImageUrls ?? []).map((imageUrl, index) => (
-                  <div className="flex min-w-0 gap-2" key={`secondary-image-${index}`}>
+                  <div
+                    className="flex min-w-0 gap-2"
+                    key={`secondary-image-${index}`}
+                  >
                     <input
                       className="border-line focus:border-forest h-10 min-w-0 flex-1 rounded-xl border bg-white px-3 text-xs font-normal outline-none"
-                      type="url"
+                      type="text"
                       value={imageUrl}
-                      onChange={(event) => setEditing({ ...editing, secondaryImageUrls: (editing.secondaryImageUrls ?? []).map((url, imageIndex) => imageIndex === index ? event.target.value : url) })}
+                      onChange={(event) =>
+                        setEditing({
+                          ...editing,
+                          secondaryImageUrls: (
+                            editing.secondaryImageUrls ?? []
+                          ).map((url, imageIndex) =>
+                            imageIndex === index ? event.target.value : url,
+                          ),
+                        })
+                      }
                       placeholder={`Google Drive image URL ${index + 2}`}
                       aria-label={`Additional image ${index + 1} URL`}
                     />
                     <button
                       className="text-muted rounded-xl px-3 transition hover:bg-red-50 hover:text-red-700"
                       type="button"
-                      onClick={() => setEditing({ ...editing, secondaryImageUrls: (editing.secondaryImageUrls ?? []).filter((_, imageIndex) => imageIndex !== index) })}
+                      onClick={() =>
+                        setEditing({
+                          ...editing,
+                          secondaryImageUrls: (
+                            editing.secondaryImageUrls ?? []
+                          ).filter((_, imageIndex) => imageIndex !== index),
+                        })
+                      }
                       aria-label={`Remove additional image ${index + 1}`}
-                    >×</button>
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
-                <p className="text-muted text-[10px]">Add publicly viewable image links. Google Drive images are converted for display.</p>
+                <p className="text-muted text-[10px]">
+                  Drive images must allow Anyone with the link (Viewer); pasted
+                  share links are converted for display.
+                </p>
               </div>
               <label className="col-span-2 text-[10px] font-semibold">
                 Meesho product URL{" "}
@@ -807,7 +893,7 @@ export function AdminDashboard({
                   onChange={(event) =>
                     setEditing({ ...editing, description: event.target.value })
                   }
-                  placeholder="What makes this find lovely?"
+                  placeholder="Describe the fabric, weave, or feel"
                 />
               </label>
               <label className="col-span-2 flex items-center gap-2 text-[10px] font-medium">
@@ -843,11 +929,11 @@ export function AdminDashboard({
                 disabled={busy}
               >
                 {busy
-                  ? "Savingâ€¦"
+                  ? "Saving..."
                   : editing.id
                     ? "Save changes"
                     : "Add to the shop"}
-                <span className="text-leaf">â†’</span>
+                <FiArrowUpRight className="text-leaf" aria-hidden="true" />
               </button>
             </div>
           </form>
@@ -861,6 +947,19 @@ export function AdminDashboard({
             setCatalogOptions(options);
             setManageOptions(false);
             setNotice("Categories and badges updated.");
+          }}
+        />
+      )}
+      {productToDelete && (
+        <ConfirmDialog
+          title="Remove this product?"
+          description={`“${productToDelete.name}” will be removed from your catalog.`}
+          confirmLabel="Remove product"
+          onCancel={() => setProductToDelete(null)}
+          onConfirm={() => {
+            const product = productToDelete;
+            setProductToDelete(null);
+            void removeProduct(product);
           }}
         />
       )}

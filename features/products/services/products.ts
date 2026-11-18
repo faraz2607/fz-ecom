@@ -3,6 +3,7 @@ import "server-only";
 import { MongoClient, ObjectId, type Collection } from "mongodb";
 import type { Product, ProductInput } from "@/features/products/types/product";
 import { calculateSalePrice } from "@/features/products/services/pricing";
+import { toDisplayImageUrl } from "@/features/products/services/image-url";
 
 type StoredProduct = Omit<Product, "id"> & { _id: ObjectId };
 
@@ -31,6 +32,21 @@ async function getCollection(): Promise<Collection<StoredProduct>> {
   return database.collection<StoredProduct>("products");
 }
 
+async function nextProductCode(): Promise<string> {
+  const client = await getClient();
+  const counter = await client
+    .db(process.env.MONGODB_DB ?? "FzEcomDev")
+    .collection<{ _id: string; value: number }>("counters")
+    .findOneAndUpdate(
+      { _id: "product-code" },
+      { $inc: { value: 1 } },
+      { upsert: true, returnDocument: "after" },
+    );
+  const sequence = counter?.value ?? 1;
+  if (sequence > 9999) throw new Error("Product code limit reached.");
+  return `${(process.env.BRAND_SHORT_NAME ?? "ET").slice(0, 2).toUpperCase()}${String(sequence).padStart(4, "0")}`;
+}
+
 function toProduct(document: StoredProduct): Product {
   const { _id, ...fields } = document;
   const discountPercent =
@@ -38,12 +54,42 @@ function toProduct(document: StoredProduct): Product {
     (fields.originalPrice
       ? Math.round((1 - fields.price / fields.originalPrice) * 100)
       : 0);
-  return { ...fields, discountPercent, id: _id.toString() };
+  return {
+    ...fields,
+    imageUrl: toDisplayImageUrl(fields.imageUrl),
+    secondaryImageUrls: fields.secondaryImageUrls?.map(toDisplayImageUrl),
+    discountPercent,
+    id: _id.toString(),
+  };
 }
 
 export async function getProducts(): Promise<Product[]> {
   const collection = await getCollection();
   const documents = await collection.find().sort({ createdAt: -1 }).toArray();
+  const brandPrefix = (process.env.BRAND_SHORT_NAME ?? "ET")
+    .slice(0, 2)
+    .toUpperCase();
+  const sequencePattern = new RegExp(`^${brandPrefix}(\\d{4})$`);
+  let sequence = documents.reduce((maximum, product) => {
+    const match = product.productCode?.match(sequencePattern);
+    return Math.max(maximum, match ? Number(match[1]) : 0);
+  }, 0);
+  const counters = (await getClient())
+    .db(process.env.MONGODB_DB ?? "FzEcomDev")
+    .collection<{ _id: string; value: number }>("counters");
+  for (const document of documents) {
+    if (document.productCode) continue;
+    document.productCode = await nextProductCode();
+    await collection.updateOne(
+      { _id: document._id },
+      { $set: { productCode: document.productCode } },
+    );
+  }
+  await counters.updateOne(
+    { _id: "product-code" },
+    { $max: { value: sequence } },
+    { upsert: true },
+  );
   return documents.map(toProduct);
 }
 
@@ -51,6 +97,7 @@ export async function createProduct(input: ProductInput): Promise<Product> {
   const collection = await getCollection();
   const document: StoredProduct = {
     ...input,
+    productCode: await nextProductCode(),
     price: calculateSalePrice(input.originalPrice, input.discountPercent),
     _id: new ObjectId(),
     createdAt: new Date().toISOString(),

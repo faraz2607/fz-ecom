@@ -1,4 +1,5 @@
 import type { ProductInput } from "@/features/products/types/product";
+import { toDisplayImageUrl } from "@/features/products/services/image-url";
 
 export function validateProduct(
   value: unknown,
@@ -23,11 +24,16 @@ export function validateProduct(
   const discountPercent = Number(data.discountPercent);
   if (!name || !category || !imageUrl)
     return { error: "Name, category, and image URL are required." };
+  const isDisplayImagePath = (url: string) =>
+    /^\/api\/images\/drive\/[A-Za-z0-9_-]{10,200}$/.test(url);
   try {
     if (
-      ![imageUrl, meeshoUrl, ...secondaryImageUrls]
-        .filter(Boolean)
-        .every((url) => ["http:", "https:"].includes(new URL(url).protocol))
+      ![imageUrl, ...secondaryImageUrls].every(
+        (url) =>
+          isDisplayImagePath(url) ||
+          ["http:", "https:"].includes(new URL(url).protocol),
+      ) ||
+      (meeshoUrl && !["http:", "https:"].includes(new URL(meeshoUrl).protocol))
     )
       return { error: "URLs must use http or https." };
   } catch {
@@ -45,23 +51,12 @@ export function validateProduct(
     return {
       error: "Enter a valid list price and a discount from 0 to 100%.",
     };
-  const toDisplayUrl = (url: string) => {
-    const parsedUrl = new URL(url);
-    const driveFileId =
-      parsedUrl.hostname === "drive.google.com"
-        ? (parsedUrl.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ??
-          parsedUrl.searchParams.get("id"))
-        : null;
-    return driveFileId
-      ? `https://drive.google.com/uc?export=view&id=${encodeURIComponent(driveFileId)}`
-      : url;
-  };
   return {
     product: {
       name,
       category,
-      imageUrl: toDisplayUrl(imageUrl),
-      secondaryImageUrls: secondaryImageUrls.map(toDisplayUrl),
+      imageUrl: toDisplayImageUrl(imageUrl),
+      secondaryImageUrls: secondaryImageUrls.map(toDisplayImageUrl),
       meeshoUrl,
       description: text("description", 220),
       badge: text("badge", 30),

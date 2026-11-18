@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { FiX } from "react-icons/fi";
 import type { CatalogOptions } from "@/features/products/types/catalog-options";
 
 export function CatalogOptionsManager({
@@ -12,41 +13,39 @@ export function CatalogOptionsManager({
   onClose: () => void;
   onSaved: (options: CatalogOptions) => void;
 }) {
-  const [categories, setCategories] = useState<
-    { original: string | null; value: string }[]
-  >(initial.categories.map((value) => ({ original: value, value })));
-  const [badges, setBadges] = useState<
-    { original: string | null; value: string }[]
-  >(initial.badges.map((value) => ({ original: value, value })));
+  const [categories, setCategories] = useState(initial.categories);
+  const [badges, setBadges] = useState(initial.badges);
+  const [categoryInput, setCategoryInput] = useState("");
+  const [badgeInput, setBadgeInput] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const addOption = (type: "category" | "badge") => {
+    const value = (type === "category" ? categoryInput : badgeInput).trim();
+    const values = type === "category" ? categories : badges;
+    if (
+      !value ||
+      values.some((item) => item.toLowerCase() === value.toLowerCase())
+    )
+      return;
+    if (type === "category") {
+      setCategories([...categories, value]);
+      setCategoryInput("");
+    } else {
+      setBadges([...badges, value]);
+      setBadgeInput("");
+    }
+  };
   const save = async () => {
     setBusy(true);
     setError("");
-    const renames = (entries: { original: string | null; value: string }[]) =>
-      Object.fromEntries(
-        entries
-          .filter(
-            (entry) =>
-              entry.original &&
-              entry.value.trim() &&
-              entry.original !== entry.value,
-          )
-          .map((entry) => [entry.original, entry.value.trim()]),
-      );
     try {
       const response = await fetch("/api/admin/catalog-options", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          options: {
-            categories: categories
-              .map((entry) => entry.value.trim())
-              .filter(Boolean),
-            badges: badges.map((entry) => entry.value.trim()).filter(Boolean),
-          },
-          categoryRenames: renames(categories),
-          badgeRenames: renames(badges),
+          options: { categories, badges },
+          categoryRenames: {},
+          badgeRenames: {},
         }),
       });
       const result = await response.json();
@@ -63,46 +62,60 @@ export function CatalogOptionsManager({
   };
   const listEditor = (
     title: string,
-    values: { original: string | null; value: string }[],
-    setter: (values: { original: string | null; value: string }[]) => void,
-  ) => (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
+    type: "category" | "badge",
+    values: string[],
+  ) => {
+    const input = type === "category" ? categoryInput : badgeInput;
+    const setInput = type === "category" ? setCategoryInput : setBadgeInput;
+    const setValues = type === "category" ? setCategories : setBadges;
+    return (
+      <section className="space-y-3">
         <h3 className="text-sm font-semibold">{title}</h3>
-        <button
-          className="text-forest bg-leaf/40 rounded-full px-3 py-2 text-xs font-semibold"
-          onClick={() =>
-            setter([...values, { original: null, value: "New option" }])
-          }
-        >
-          + Add
-        </button>
-      </div>
-      {values.map((entry, index) => (
-        <div className="flex gap-2" key={`${title}-${index}`}>
+        <div className="flex gap-2">
           <input
             className="border-line min-w-0 flex-1 rounded-xl border bg-white px-3 py-2 text-sm"
-            value={entry.value}
-            onChange={(event) =>
-              setter(
-                values.map((item, i) =>
-                  i === index ? { ...item, value: event.target.value } : item,
-                ),
-              )
-            }
-            aria-label={`${title} option ${index + 1}`}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                addOption(type);
+              }
+            }}
+            placeholder={`Add ${type}`}
+            aria-label={`Add ${type}`}
           />
           <button
-            className="text-muted rounded-xl px-3 hover:bg-red-50 hover:text-red-700"
-            onClick={() => setter(values.filter((_, i) => i !== index))}
-            aria-label={`Remove ${entry.value}`}
+            className="text-forest bg-leaf/40 rounded-xl px-4 py-2 text-xs font-semibold"
+            type="button"
+            onClick={() => addOption(type)}
           >
-            ×
+            Add
           </button>
         </div>
-      ))}
-    </section>
-  );
+        <div className="flex flex-wrap gap-2">
+          {values.map((value) => (
+            <span
+              className="border-ink/25 bg-paper text-ink inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs"
+              key={value}
+            >
+              {value}
+              <button
+                className="text-muted hover:text-red-700"
+                type="button"
+                onClick={() =>
+                  setValues(values.filter((item) => item !== value))
+                }
+                aria-label={`Remove ${value}`}
+              >
+                <FiX aria-hidden="true" />
+              </button>
+            </span>
+          ))}
+        </div>
+      </section>
+    );
+  };
   return (
     <div className="bg-ink/55 fixed inset-0 z-[60] grid place-items-center overflow-y-auto p-4 backdrop-blur-sm">
       <div className="bg-panel my-auto w-full max-w-lg space-y-6 rounded-3xl p-6 shadow-2xl">
@@ -114,15 +127,15 @@ export function CatalogOptionsManager({
             <h2 className="font-display mt-1 text-3xl">Categories & badges</h2>
           </div>
           <button
-            className="bg-paper rounded-full px-3 py-2"
+            className="bg-paper text-muted grid size-9 place-items-center rounded-full"
             onClick={onClose}
             aria-label="Close"
           >
-            ×
+            <FiX aria-hidden="true" />
           </button>
         </div>
-        {listEditor("Categories", categories, setCategories)}
-        {listEditor("Badges", badges, setBadges)}
+        {listEditor("Categories", "category", categories)}
+        {listEditor("Badges", "badge", badges)}
         {error && (
           <p
             className="rounded-xl bg-red-50 p-3 text-xs text-red-800"

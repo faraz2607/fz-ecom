@@ -38,12 +38,21 @@ button {
 }
 
 button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
+a:focus-visible {
   outline: 3px solid #94b346;
   outline-offset: 3px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: var(--color-line) !important;
+}
+
+label:focus-within {
+  border-color: var(--color-line) !important;
 }
 
 @keyframes fade-up {
