@@ -3,7 +3,7 @@ export const BRAND = {
   tagline: "Traditional fabrics. Everyday comfort.",
   description:
     "Soft, dependable fabrics for every day — from vibrant gamchas and breezy lungis to effortless lowers, stoles, and shemaghs.",
-  announcement: "Weaving comfort into every day — explore the Ek Tara edit.",
+  announcement: "Weaving comfort into every day — explore the Ek Tara",
   heroKicker: "TRADITIONAL FABRICS, DAILY COMFORT",
   heroHeadline: ["Everyday", "comfort,", "woven", "for you."],
   communityNote: "Thoughtfully chosen. Made for every day.",
@@ -39,7 +39,7 @@ export const BRAND = {
   aboutTitle: "Everyday fabrics, made to feel like yours.",
   aboutCopy:
     "From a classic cotton gamcha to an easy everyday lower, Ek Tara brings together comfortable fabrics, useful colours, and familiar weaves for daily life.",
-  supportEmail: "support@ektarafabrics.com",
+  supportEmail: "ektarafabrics@gmail.com",
   currency: "INR",
   locale: "en-IN",
   shortName: "ET",
@@ -49,9 +49,9 @@ export const BRAND = {
   foreground: "#183d34",
   accent: "#e2bc68",
   heroImage:
-    "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1400&q=90",
+    "/hero-et.jpg",
   defaultShopUrl: "https://www.meesho.com/",
-  productCategories: ["Shemaghs", "Stoles", "Gamchas", "Lungis", "Lowers"],
+  productCategories: ["T-Shirt", "Stoles", "Gamchas", "Lungis", "Lowers"],
   productBadges: [
     "Bestseller",
     "Pure Cotton",
