@@ -8,7 +8,10 @@ export const BRAND = {
   heroHeadline: ["Everyday", "comfort,", "woven", "for you."],
   communityNote: "Thoughtfully woven. Built for daily wear.",
   stickerCopy: ["Ek Tara", "soft", "weaves"],
-  heroCaptions: ["01 — EVERYDAY ESSENTIALS", "BREATHABLE COTTON · TIMELESS CHECKS"],
+  heroCaptions: [
+    "01 — EVERYDAY ESSENTIALS",
+    "BREATHABLE COTTON · TIMELESS CHECKS",
+  ],
   promiseItems: [
     {
       icon: "✿",
@@ -43,12 +46,11 @@ export const BRAND = {
   currency: "INR",
   locale: "en-IN",
   shortName: "ET",
-  // Terracotta & Indigo Loom Palette
-  iconBackground: "#1E2B3C", // Deep Indigo Vat
-  iconAccent: "#C85A32",     // Handloom Terracotta
-  pageBackground: "#FAF5EE", // Warm Khadi Cream
-  foreground: "#1E2B3C",     // Deep Indigo Vat
-  accent: "#C85A32",         // Handloom Terracotta
+  iconBackground: "#183d34",
+  iconAccent: "#e2bc68",
+  pageBackground: "#f4f4ee",
+  foreground: "#183d34",
+  accent: "#e2bc68",
   heroImage: "/hero-et.jpg",
   defaultShopUrl: "https://www.meesho.com/",
   productCategories: ["T-Shirt", "Stoles", "Gamchas", "Lungis", "Lowers"],

@@ -191,14 +191,11 @@ export function Storefront({
               className="flex items-center gap-3 py-5 sm:justify-center sm:py-6"
               key={item.title}
             >
-              <span className="bg-leaf/50 text-forest grid size-10 shrink-0 place-items-center rounded-2xl text-base">
-                {item.title === "Comfort-first fabrics" ? (
-                  <FiCheckCircle aria-hidden="true" />
-                ) : item.title === "Colours with character" ? (
-                  <FiHeart aria-hidden="true" />
-                ) : (
-                  <FiShoppingBag aria-hidden="true" />
-                )}
+              <span
+                aria-hidden="true"
+                className="bg-leaf/50 text-forest grid size-10 shrink-0 place-items-center rounded-2xl text-base"
+              >
+                {item.icon}
               </span>
               <span>
                 <strong className="block text-xs font-bold">
