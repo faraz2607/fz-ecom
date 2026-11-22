@@ -1,13 +1,13 @@
 export const BRAND = {
-  name: "Ek Tara Fabrics",
-  tagline: "Traditional fabrics. Everyday comfort.",
+  name: "Fz Ecommerce",
+  tagline: "Discover everyday finds.",
   description:
     "Soft, dependable fabrics for every day — from vibrant gamchas and breezy lungis to effortless lowers, stoles, and shemaghs.",
-  announcement: "Weaving comfort into every day — explore the Ek Tara edit.",
+  announcement: "Discover something lovely for every day.",
   heroKicker: "TRADITIONAL FABRICS, DAILY COMFORT",
   heroHeadline: ["Everyday", "comfort,", "woven", "for you."],
   communityNote: "Thoughtfully chosen. Made for every day.",
-  stickerCopy: ["Ek Tara", "soft", "stories"],
+  stickerCopy: ["Fz", "soft", "stories"],
   heroCaptions: ["01 — MADE FOR EVERY DAY", "SOFT COTTON · TIMELESS CHECKS"],
   promiseItems: [
     {
@@ -32,17 +32,17 @@ export const BRAND = {
     "Discover breathable cotton classics and colourful everyday essentials.",
   emptyTitle: "Your fabric edit is on its way.",
   emptyDescription:
-    "Try another search or category while we bring more Ek Tara favourites to the shop.",
-  noteKicker: "THE EK TARA PROMISE",
+    "Try another search or category while we bring more favourites to the shop.",
+  noteKicker: "THE FZ ECOMMERCE PROMISE",
   noteAction: "Browse fabrics",
   footerSignoff: "Woven for comfort, chosen with care",
   aboutTitle: "Everyday fabrics, made to feel like yours.",
   aboutCopy:
-    "From a classic cotton gamcha to an easy everyday lower, Ek Tara brings together comfortable fabrics, useful colours, and familiar weaves for daily life.",
-  supportEmail: "support@ektarafabrics.com",
+    "Discover comfortable fabrics, useful colours, and familiar styles for daily life.",
+  supportEmail: "support@fzecommerce.com",
   currency: "INR",
   locale: "en-IN",
-  shortName: "ET",
+  shortName: "FE",
   iconBackground: "#183d34",
   iconAccent: "#e2bc68",
   pageBackground: "#f4f4ee",

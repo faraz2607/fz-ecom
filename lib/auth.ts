@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
 const cookieName = "fz_admin_session";
-const sessionDuration = 60 * 60 * 24 * 7;
+const sessionDuration = 60 * 60 * 24;
 
 function signature(value: string): string {
   return createHmac(
@@ -21,7 +21,7 @@ function validSession(value: string | undefined): boolean {
   const [expires, suppliedSignature] = value.split(".");
   if (!expires || !suppliedSignature || Number(expires) < Date.now())
     return false;
-  const expected = signature(expires);
+  const expected = signature(`v2:${expires}`);
   const suppliedBuffer = Buffer.from(suppliedSignature);
   const expectedBuffer = Buffer.from(expected);
   return (
@@ -38,7 +38,7 @@ export async function isAdmin(): Promise<boolean> {
 export async function createSession(): Promise<void> {
   const expires = String(Date.now() + sessionDuration * 1000);
   const cookieStore = await cookies();
-  cookieStore.set(cookieName, `${expires}.${signature(expires)}`, {
+  cookieStore.set(cookieName, `${expires}.${signature(`v2:${expires}`)}`, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

@@ -20,11 +20,15 @@ The home page loads the MongoDB catalog. It displays ten temporary shemagh, stol
 
 ### UI/UX Requirements
 
-Ek Tara Fabrics messaging, mobile-friendly product cards, clear pricing, fabric-focused copy, trust messaging, and useful empty states.
+Configurable brand messaging, mobile-friendly product cards, clear pricing, product-focused copy, trust messaging, and useful empty states.
 
 ### Additional Notes
 
 Brand text is centralized in `config/brand.ts`.
+
+## Brand identity and share previews
+
+The root layout publishes Open Graph and large-image Twitter metadata from `config/brand.ts`. `app/opengraph-image.tsx` generates a share card using `BRAND.name`, `BRAND.tagline`, `BRAND.description`, `BRAND.shortName`, `BRAND.iconBackground`, `BRAND.foreground`, and `BRAND.iconAccent`; the short-name tile is the share-card logo. Update those values when rebranding so the storefront header, browser icons, and shared URL preview remain consistent. Set `NEXT_PUBLIC_SITE_URL` to the public storefront origin in production; `VERCEL_URL` is used as a fallback on Vercel.
 
 ## Feature 2: Admin catalog
 

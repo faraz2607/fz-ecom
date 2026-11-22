@@ -3,6 +3,7 @@ import type { Product } from "@/features/products/types/product";
 export const DUMMY_FABRICS: Product[] = [
   {
     id: "fabric-demo-shemagh-01",
+    productCode: "FE0001",
     name: "Desert Check Cotton Shemagh",
     description: "A breathable checked wrap with a soft, easy drape.",
     category: "Shemaghs",
@@ -17,6 +18,7 @@ export const DUMMY_FABRICS: Product[] = [
   },
   {
     id: "fabric-demo-stole-02",
+    productCode: "FE0002",
     name: "Everyday Soft Cotton Stole",
     description: "Lightweight comfort in colours made for daily wear.",
     category: "Stoles",
@@ -31,6 +33,7 @@ export const DUMMY_FABRICS: Product[] = [
   },
   {
     id: "fabric-demo-gamcha-03",
+    productCode: "FE0003",
     name: "Bengal Check Gamcha",
     description: "A familiar red check, woven for everyday use.",
     category: "Gamchas",
@@ -45,6 +48,7 @@ export const DUMMY_FABRICS: Product[] = [
   },
   {
     id: "fabric-demo-lungi-04",
+    productCode: "FE0004",
     name: "Breeze Cotton Lungi",
     description: "An airy, easy-wearing classic for slow, comfortable days.",
     category: "Lungis",
@@ -58,21 +62,8 @@ export const DUMMY_FABRICS: Product[] = [
     createdAt: "2026-02-07T00:00:00.000Z",
   },
   {
-    id: "fabric-demo-lower-05",
-    name: "Relaxed Fit Cotton Lower",
-    description: "Soft-touch fabric and a comfortable fit for everyday wear.",
-    category: "Lowers",
-    badge: "Easy comfort",
-    price: 499,
-    originalPrice: 899,
-    discountPercent: 44,
-    imageUrl:
-      "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=900&q=85",
-    active: true,
-    createdAt: "2026-02-06T00:00:00.000Z",
-  },
-  {
     id: "fabric-demo-stole-06",
+    productCode: "FE0005",
     name: "Indigo Stripe Cotton Stole",
     description: "A timeless stripe with a soft finish and graceful fall.",
     category: "Stoles",
@@ -87,6 +78,7 @@ export const DUMMY_FABRICS: Product[] = [
   },
   {
     id: "fabric-demo-gamcha-07",
+    productCode: "FE0006",
     name: "Green Border Handloom Gamcha",
     description: "A lightweight cotton staple with a traditional border.",
     category: "Gamchas",
@@ -101,6 +93,7 @@ export const DUMMY_FABRICS: Product[] = [
   },
   {
     id: "fabric-demo-shemagh-08",
+    productCode: "FE0007",
     name: "Olive Trail Shemagh",
     description: "A versatile cotton layer with a classic woven check.",
     category: "Shemaghs",
@@ -115,6 +108,7 @@ export const DUMMY_FABRICS: Product[] = [
   },
   {
     id: "fabric-demo-lungi-09",
+    productCode: "FE0008",
     name: "Multicolour Check Cotton Lungi",
     description: "A vibrant check pattern in soft, breathable cotton.",
     category: "Lungis",
@@ -129,6 +123,7 @@ export const DUMMY_FABRICS: Product[] = [
   },
   {
     id: "fabric-demo-lower-10",
+    productCode: "FE0009",
     name: "Everyday Cotton Lounge Lower",
     description: "A relaxed wardrobe essential for home and beyond.",
     category: "Lowers",

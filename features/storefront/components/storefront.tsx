@@ -11,6 +11,8 @@ import {
   FiSearch,
   FiShoppingBag,
   FiX,
+  FiArrowLeft,
+  FiArrowRight,
 } from "react-icons/fi";
 import { BRAND } from "@/config/brand";
 import { CustomSelect } from "@/components/common/custom-select";
@@ -46,6 +48,7 @@ export function Storefront({
   const [badge, setBadge] = useState("All badges");
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [page, setPage] = useState(1);
   const touchStartX = useRef<number | null>(null);
   const catalogProducts = useDemoProducts ? DUMMY_FABRICS : products;
   const categories = useMemo(
@@ -63,6 +66,15 @@ export function Storefront({
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
+  const storefrontPageSize = 100;
+  const pageCount = Math.ceil(filteredProducts.length / storefrontPageSize);
+  const visibleProducts =
+    filteredProducts.length > storefrontPageSize
+      ? filteredProducts.slice(
+          (page - 1) * storefrontPageSize,
+          page * storefrontPageSize,
+        )
+      : filteredProducts;
 
   function moveViewer(offset: number) {
     if (!viewingProduct) return;
@@ -85,7 +97,7 @@ export function Storefront({
           <span className="bg-forest text-leaf grid size-9 place-items-center rounded-xl text-sm font-bold">
             {BRAND.shortName}
           </span>
-          <span className="font-display text-xl tracking-tight sm:text-2xl">
+          <span className="font-sans text-xl font-semibold tracking-tight sm:text-2xl">
             <span className="text-forest">{BRAND.name.split(" ")[0]}</span>{" "}
             <span className="text-leaf">
               {BRAND.name.split(" ").slice(1).join(" ")}
@@ -93,15 +105,7 @@ export function Storefront({
           </span>
         </Link>
         <a
-          className="order-3 basis-full text-right text-[10px] text-muted transition-colors hover:text-forest md:order-2 md:basis-auto sm:text-xs"
-          href={`mailto:${BRAND.supportEmail}`}
-          aria-label={`Contact us at ${BRAND.supportEmail}`}
-        >
-          Contact us{" "}
-          <span className="hidden md:inline">· {BRAND.supportEmail}</span>
-        </a>
-        <a
-          className="group order-2 border-ink/15 hover:border-forest hover:bg-forest inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-semibold transition-all hover:text-white md:order-3 sm:text-sm"
+          className="group border-ink/15 hover:border-forest hover:bg-forest order-2 inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-semibold transition-all hover:text-white sm:text-sm md:order-3"
           href={shopUrl}
           target="_blank"
           rel="noreferrer"
@@ -238,13 +242,16 @@ export function Storefront({
           </div>
         </div>
 
-        <div className="border-line mb-7 flex flex-col gap-3 border-y py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex gap-2">
+        <div className="border-line mb-7 flex flex-col-reverse gap-3 border-y py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid grid-cols-2 gap-2">
             <CustomSelect
-              className="border-line text-ink h-10 rounded-full border bg-white px-4 text-xs"
+              className="h-11 w-full text-[11px] sm:text-xs"
               aria-label="Filter by category"
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              onChange={(value) => {
+                setCategory(value);
+                setPage(1);
+              }}
             >
               {categories.map((item) => (
                 <option key={item} value={item}>
@@ -253,10 +260,13 @@ export function Storefront({
               ))}
             </CustomSelect>
             <CustomSelect
-              className="border-line text-ink h-10 rounded-full border bg-white px-4 text-xs"
+              className="h-11 w-full text-[11px] sm:text-xs"
               aria-label="Filter by badge"
               value={badge}
-              onChange={(event) => setBadge(event.target.value)}
+              onChange={(value) => {
+                setBadge(value);
+                setPage(1);
+              }}
             >
               {[
                 "All badges",
@@ -272,14 +282,17 @@ export function Storefront({
               ))}
             </CustomSelect>
           </div>
-          <label className="border-line text-muted focus-within:border-forest flex h-10 items-center gap-2 rounded-full border bg-white px-4 transition-colors">
+          <label className="border-line text-muted focus-within:border-forest flex h-11 min-w-0 items-center gap-2 rounded-xl border bg-white px-3 transition-colors sm:rounded-full sm:px-4">
             <span className="text-lg" aria-hidden="true">
               <FiSearch aria-hidden="true" />
             </span>
             <input
               className="text-ink placeholder:text-muted w-full bg-transparent text-xs outline-none sm:w-48"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(1);
+              }}
               placeholder="Search fabrics or product ID"
               aria-label="Search products"
             />
@@ -297,7 +310,7 @@ export function Storefront({
 
         {filteredProducts.length ? (
           <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 md:gap-y-10">
-            {filteredProducts.map((product, index) => {
+            {visibleProducts.map((product, index) => {
               const discount = product.discountPercent;
               const productShopUrl = product.meeshoUrl?.trim() || shopUrl;
               return (
@@ -340,7 +353,10 @@ export function Storefront({
                   </button>
                   <div className="text-muted mt-3 flex items-center justify-between gap-2 text-[9px] font-semibold tracking-[0.1em] uppercase sm:mt-4 sm:text-[10px]">
                     <span>{product.category}</span>
-                    <span className="text-forest rounded-full border border-ink/20 bg-leaf/25 px-2 py-1 text-[9px] font-bold tracking-normal">{product.productCode ?? "ET----"}</span>
+                    <span className="text-forest border-ink/20 bg-leaf/25 rounded-full border px-2 py-1 text-[9px] font-bold tracking-normal">
+                      {product.productCode ??
+                        `FE${String(index + 1).padStart(4, "0")}`}
+                    </span>
                   </div>
                   <h3 className="font-display mt-1.5 truncate text-base sm:text-xl">
                     {product.name}
@@ -394,6 +410,32 @@ export function Storefront({
               Browse all fabrics
             </button>
           </div>
+        )}
+        {filteredProducts.length > storefrontPageSize && (
+          <nav
+            className="mt-10 flex items-center justify-center gap-4"
+            aria-label="Store product pages"
+          >
+            <button
+              className="border-line rounded-full border px-4 py-2 text-xs disabled:opacity-40"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              <FiArrowLeft className="mr-1 inline" />
+              Previous
+            </button>
+            <span className="text-muted text-xs">
+              Page {page} of {pageCount}
+            </span>
+            <button
+              className="border-line rounded-full border px-4 py-2 text-xs disabled:opacity-40"
+              disabled={page >= pageCount}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+              <FiArrowRight className="ml-1 inline" />
+            </button>
+          </nav>
         )}
       </section>
 
@@ -464,7 +506,7 @@ export function Storefront({
               {productImages(viewingProduct).length > 1 && (
                 <>
                   <button
-                    className="text-forest absolute top-1/2 left-2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-forest/20 bg-white shadow-lg transition hover:scale-105 hover:bg-leaf/30 sm:left-4 sm:size-12"
+                    className="text-forest border-forest/20 hover:bg-leaf/30 absolute top-1/2 left-2 grid size-11 -translate-y-1/2 place-items-center rounded-full border bg-white shadow-lg transition hover:scale-105 sm:left-4 sm:size-12"
                     type="button"
                     onClick={() => moveViewer(-1)}
                     aria-label="Previous product image"
@@ -472,7 +514,7 @@ export function Storefront({
                     <FiChevronLeft className="text-xl" aria-hidden="true" />
                   </button>
                   <button
-                    className="text-forest absolute top-1/2 right-2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-forest/20 bg-white shadow-lg transition hover:scale-105 hover:bg-leaf/30 sm:right-4 sm:size-12"
+                    className="text-forest border-forest/20 hover:bg-leaf/30 absolute top-1/2 right-2 grid size-11 -translate-y-1/2 place-items-center rounded-full border bg-white shadow-lg transition hover:scale-105 sm:right-4 sm:size-12"
                     type="button"
                     onClick={() => moveViewer(1)}
                     aria-label="Next product image"
@@ -546,21 +588,37 @@ export function Storefront({
         </div>
       </section>
 
-      <footer className="border-line text-muted mx-auto flex max-w-7xl flex-col gap-3 border-t px-5 py-7 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
-        <Link
-          className="font-display text-ink flex items-center gap-2 text-lg"
-          href="/"
-        >
-          <span className="bg-forest text-leaf grid size-7 place-items-center rounded-lg text-[9px] font-bold">
-            {BRAND.shortName}
-          </span>
-          <span className="text-forest">{BRAND.name.split(" ")[0]}</span>{" "}<span className="text-leaf">{BRAND.name.split(" ").slice(1).join(" ")}</span>
-        </Link>
-        <span>{BRAND.tagline}</span>
-        <span className="inline-flex items-center gap-1.5">
-          {BRAND.footerSignoff}
-          <FiHeart className="text-forest shrink-0" aria-hidden="true" />
-        </span>
+      <footer className="bg-forest text-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 sm:grid-cols-3 sm:px-8 lg:px-12">
+          <Link
+            className="flex items-center gap-3 self-start text-lg font-semibold"
+            href="/"
+          >
+            <span className="bg-leaf text-forest grid size-10 place-items-center rounded-xl text-xs font-bold">
+              {BRAND.shortName}
+            </span>
+            {BRAND.name}
+          </Link>
+          <div>
+            <h2 className="text-leaf text-xs font-bold tracking-widest uppercase">
+              Contact us
+            </h2>
+            <a
+              className="mt-2 inline-block text-sm text-white/80 hover:text-white"
+              href={`mailto:${BRAND.supportEmail}`}
+            >
+              {BRAND.supportEmail}
+            </a>
+          </div>
+          <div className="text-sm text-white/75">
+            <p>{BRAND.tagline}</p>
+            <p className="mt-2">{BRAND.footerSignoff}</p>
+            <p className="mt-2">Proudly made in India 🇮🇳</p>
+          </div>
+        </div>
+        <div className="border-t border-white/15 px-5 py-4 text-center text-[11px] text-white/60">
+          © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
+        </div>
       </footer>
     </main>
   );
