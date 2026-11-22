@@ -1,55 +1,55 @@
 export const BRAND = {
   name: "Ek Tara Fabrics",
-  tagline: "Traditional fabrics. Everyday comfort.",
+  tagline: "Traditional weaves. Everyday ease.",
   description:
-    "Soft, dependable fabrics for every day — from vibrant gamchas and breezy lungis to effortless lowers, stoles, and shemaghs.",
-  announcement: "Weaving comfort into every day — explore the Ek Tara",
-  heroKicker: "TRADITIONAL FABRICS, DAILY COMFORT",
+    "Breathable, dependable essentials for daily life — from handloom-inspired gamchas and breezy lungis to everyday t-shirts, lowers, and stoles.",
+  announcement: "Woven for daily comfort — explore the Ek Tara collection",
+  heroKicker: "HERITAGE WEAVES · EVERYDAY WEAR",
   heroHeadline: ["Everyday", "comfort,", "woven", "for you."],
-  communityNote: "Thoughtfully chosen. Made for every day.",
-  stickerCopy: ["Ek Tara", "soft", "stories"],
-  heroCaptions: ["01 — MADE FOR EVERY DAY", "SOFT COTTON · TIMELESS CHECKS"],
+  communityNote: "Thoughtfully woven. Built for daily wear.",
+  stickerCopy: ["Ek Tara", "soft", "weaves"],
+  heroCaptions: ["01 — EVERYDAY ESSENTIALS", "BREATHABLE COTTON · TIMELESS CHECKS"],
   promiseItems: [
     {
       icon: "✿",
-      title: "Comfort-first fabrics",
-      detail: "Soft textures for daily wear",
+      title: "Breathable cotton feel",
+      detail: "Soft, skin-friendly textures for all-day wear",
     },
     {
       icon: "♡",
-      title: "Colours with character",
-      detail: "Checks, stripes, and classics",
+      title: "Colours that last",
+      detail: "Classic checks, stripes, and versatile solids",
     },
     {
       icon: "↗",
-      title: "Easy shopping on Meesho",
-      detail: "Choose your favourite and shop",
+      title: "Direct shopping on Meesho",
+      detail: "Pick your favourite and order in seconds",
     },
   ],
-  catalogKicker: "SHEMAGHS · STOLES · GAMCHAS · LUNGIS · LOWERS",
+  catalogKicker: "T-SHIRTS · STOLES · GAMCHAS · LUNGIS · LOWERS",
   catalogHeadline: ["A weave for", "every day."],
   catalogSubtitle:
-    "Discover breathable cotton classics and colourful everyday essentials.",
-  emptyTitle: "Your fabric edit is on its way.",
+    "Explore breathable cotton staples, classic checks, and effortless daily essentials.",
+  emptyTitle: "Fresh weaves are on the loom.",
   emptyDescription:
-    "Try another search or category while we bring more Ek Tara favourites to the shop.",
+    "Try another category or search term while we add more Ek Tara staples to the catalog.",
   noteKicker: "THE EK TARA PROMISE",
-  noteAction: "Browse fabrics",
-  footerSignoff: "Woven for comfort, chosen with care",
-  aboutTitle: "Everyday fabrics, made to feel like yours.",
+  noteAction: "Explore the collection",
+  footerSignoff: "Woven with care, made for every day",
+  aboutTitle: "Honest fabrics, made to feel like yours.",
   aboutCopy:
-    "From a classic cotton gamcha to an easy everyday lower, Ek Tara brings together comfortable fabrics, useful colours, and familiar weaves for daily life.",
+    "From a crisp cotton gamcha to a relaxed everyday t-shirt or lower, Ek Tara brings together breathable fabrics, lasting colours, and familiar weaves crafted for real daily routines.",
   supportEmail: "ektarafabrics@gmail.com",
   currency: "INR",
   locale: "en-IN",
   shortName: "ET",
-  iconBackground: "#183d34",
-  iconAccent: "#e2bc68",
-  pageBackground: "#f4f4ee",
-  foreground: "#183d34",
-  accent: "#e2bc68",
-  heroImage:
-    "/hero-et.jpg",
+  // Terracotta & Indigo Loom Palette
+  iconBackground: "#1E2B3C", // Deep Indigo Vat
+  iconAccent: "#C85A32",     // Handloom Terracotta
+  pageBackground: "#FAF5EE", // Warm Khadi Cream
+  foreground: "#1E2B3C",     // Deep Indigo Vat
+  accent: "#C85A32",         // Handloom Terracotta
+  heroImage: "/hero-et.jpg",
   defaultShopUrl: "https://www.meesho.com/",
   productCategories: ["T-Shirt", "Stoles", "Gamchas", "Lungis", "Lowers"],
   productBadges: [

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { BRAND } from "@/config/brand";
 
 export function AdminLogin() {
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -25,7 +27,12 @@ export function AdminLogin() {
       if (!response.ok) {
         setError(result.error ?? "Could not sign in.");
       } else {
-        window.location.reload();
+        const session = await fetch("/api/auth/refresh", { method: "POST" });
+        if (!session.ok) {
+          setError("Your session could not be confirmed. Please try again.");
+          return;
+        }
+        router.replace(`/admin?session=${Date.now()}`);
       }
     } catch {
       setError("Connection issue. Please try again.");
@@ -43,7 +50,7 @@ export function AdminLogin() {
           <span className="bg-leaf text-forest grid size-11 place-items-center rounded-2xl font-bold">
             {BRAND.shortName}
           </span>
-          <span className="font-display text-2xl">{BRAND.name}</span>
+          <span className="font-sans text-2xl font-semibold">{BRAND.name}</span>
         </Link>
         <div className="relative z-10 max-w-xl motion-safe:animate-[fade-up_.7s_ease-out_both]">
           <span className="text-leaf rounded-full border border-white/20 px-3 py-2 text-[10px] font-semibold tracking-[0.16em]">
@@ -69,7 +76,7 @@ export function AdminLogin() {
           <span className="bg-forest text-leaf grid size-9 place-items-center rounded-xl text-xs font-bold">
             {BRAND.shortName}
           </span>
-          <span className="font-display text-xl">{BRAND.name}</span>
+          <span className="font-sans text-xl font-semibold">{BRAND.name}</span>
         </Link>
         <form
           className="border-line bg-panel w-full max-w-md rounded-[2rem] border p-7 shadow-[0_28px_90px_-50px_rgba(24,61,52,.3)] motion-safe:animate-[fade-up_.6s_ease-out_both] sm:p-10"

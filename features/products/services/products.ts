@@ -4,6 +4,7 @@ import { MongoClient, ObjectId, type Collection } from "mongodb";
 import type { Product, ProductInput } from "@/features/products/types/product";
 import { calculateSalePrice } from "@/features/products/services/pricing";
 import { toDisplayImageUrl } from "@/features/products/services/image-url";
+import { BRAND } from "@/config/brand";
 
 type StoredProduct = Omit<Product, "id"> & { _id: ObjectId };
 
@@ -44,7 +45,7 @@ async function nextProductCode(): Promise<string> {
     );
   const sequence = counter?.value ?? 1;
   if (sequence > 9999) throw new Error("Product code limit reached.");
-  return `${(process.env.BRAND_SHORT_NAME ?? "ET").slice(0, 2).toUpperCase()}${String(sequence).padStart(4, "0")}`;
+  return `${BRAND.shortName.slice(0, 2).toUpperCase()}${String(sequence).padStart(4, "0")}`;
 }
 
 function toProduct(document: StoredProduct): Product {
@@ -66,11 +67,9 @@ function toProduct(document: StoredProduct): Product {
 export async function getProducts(): Promise<Product[]> {
   const collection = await getCollection();
   const documents = await collection.find().sort({ createdAt: -1 }).toArray();
-  const brandPrefix = (process.env.BRAND_SHORT_NAME ?? "ET")
-    .slice(0, 2)
-    .toUpperCase();
+  const brandPrefix = BRAND.shortName.slice(0, 2).toUpperCase();
   const sequencePattern = new RegExp(`^${brandPrefix}(\\d{4})$`);
-  let sequence = documents.reduce((maximum, product) => {
+  const sequence = documents.reduce((maximum, product) => {
     const match = product.productCode?.match(sequencePattern);
     return Math.max(maximum, match ? Number(match[1]) : 0);
   }, 0);
@@ -156,4 +155,38 @@ export async function deleteProduct(id: string): Promise<boolean> {
   const collection = await getCollection();
   const result = await collection.deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
+}
+
+export async function resetProductCodes(): Promise<void> {
+  const collection = await getCollection();
+  const products = await collection
+    .find()
+    .sort({ createdAt: 1, _id: 1 })
+    .toArray();
+  const prefix = BRAND.shortName.slice(0, 2).toUpperCase();
+  if (products.length > 9999) throw new Error("Product code limit reached.");
+  if (products.length) {
+    await collection.bulkWrite(
+      products.map((product, index) => ({
+        updateOne: {
+          filter: { _id: product._id },
+          update: {
+            $set: {
+              productCode: `${prefix}${String(index + 1).padStart(4, "0")}`,
+            },
+          },
+        },
+      })),
+    );
+  }
+  await (
+    await getClient()
+  )
+    .db(process.env.MONGODB_DB ?? "FzEcomDev")
+    .collection<{ _id: string; value: number }>("counters")
+    .updateOne(
+      { _id: "product-code" },
+      { $set: { value: products.length } },
+      { upsert: true },
+    );
 }

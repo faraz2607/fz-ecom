@@ -20,7 +20,7 @@ Run `npm run format` to format the project and sort Tailwind utility classes.
 
 ## Rebranding
 
-Update `config/brand.ts` to change the brand name, storefront copy, theme colors, icon monogram, and generated browser/home-screen icons. The app uses self-hosted Inter Variable for UI text and DM Serif Display for editorial headings.
+Update `config/brand.ts` to change the brand name, tagline, description, icon monogram (`shortName`), and icon colors. These settings also update the generated browser/home-screen icons and Open Graph share image (`app/opengraph-image.tsx`). Set `NEXT_PUBLIC_SITE_URL` to the deployed storefront URL so social share previews use an absolute, public image URL; Vercel deployments can fall back to `VERCEL_URL`. The app uses self-hosted Inter Variable for UI text and DM Serif Display for editorial headings.
 
 ## Deployment
 

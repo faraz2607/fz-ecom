@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiImage } from "react-icons/fi";
 
 type ProductImageProps = {
@@ -25,8 +25,8 @@ export function ProductImage({
   height,
   priority = false,
 }: ProductImageProps) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === src;
 
   if (failed) {
     return (
@@ -54,7 +54,7 @@ export function ProductImage({
       height={fill ? undefined : height}
       priority={priority}
       unoptimized
-      onError={() => setFailed(true)}
+      onError={() => setFailedSrc(src)}
     />
   );
 }

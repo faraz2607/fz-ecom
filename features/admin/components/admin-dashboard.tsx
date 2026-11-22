@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   FiArrowLeft,
   FiArrowRight,
   FiArrowUpRight,
   FiBox,
+  FiCopy,
+  FiCheck,
   FiHeart,
   FiPlus,
+  FiClipboard,
   FiSearch,
   FiX,
 } from "react-icons/fi";
@@ -38,7 +41,6 @@ const priceFormat = new Intl.NumberFormat(BRAND.locale, {
   currency: BRAND.currency,
   maximumFractionDigits: 0,
 });
-const pageSize = 6;
 
 export function AdminDashboard({
   products: initialProducts,
@@ -52,6 +54,7 @@ export function AdminDashboard({
   const [filter, setFilter] = useState("All categories");
   const [badgeFilter, setBadgeFilter] = useState("All badges");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [editing, setEditing] = useState<
     (ProductInput & { id: string; createdAt: string }) | null
   >(null);
@@ -63,6 +66,18 @@ export function AdminDashboard({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkPercent, setBulkPercent] = useState("");
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+  const [confirmResetIds, setConfirmResetIds] = useState(false);
+  const [copiedProductId, setCopiedProductId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const refreshSession = () => {
+      if (document.visibilityState === "visible")
+        void fetch("/api/auth/refresh", { method: "POST" });
+    };
+    const timer = window.setInterval(refreshSession, 15 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const categories = ["All categories", ...catalogOptions.categories];
   const filtered = useMemo(
@@ -79,6 +94,77 @@ export function AdminDashboard({
   );
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  async function pasteProduct() {
+    try {
+      const value = await navigator.clipboard.readText();
+      const parsed = JSON.parse(value) as Partial<ProductInput>;
+      if (!parsed || typeof parsed !== "object") throw new Error();
+      setEditing({
+        ...blankProduct,
+        ...parsed,
+        category: parsed.category ?? catalogOptions.categories[0] ?? "",
+        secondaryImageUrls: parsed.secondaryImageUrls ?? [],
+        id: "",
+        createdAt: "",
+      });
+      setError("");
+    } catch {
+      setError("Clipboard must contain copied product details in JSON format.");
+    }
+  }
+
+  async function copyProductDetails(product: Product) {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(product, null, 2));
+      setCopiedProductId(product.id);
+      window.setTimeout(() => {
+        setCopiedProductId((current) =>
+          current === product.id ? null : current,
+        );
+      }, 1800);
+    } catch {
+      setError("Could not copy product details to the clipboard.");
+    }
+  }
+
+  async function deleteSelected() {
+    if (!selectedIds.length) return;
+    const results = await Promise.all(
+      selectedIds.map((id) =>
+        fetch(`/api/products/${id}`, { method: "DELETE" }),
+      ),
+    );
+    const failedIds = selectedIds.filter((_, index) => !results[index]?.ok);
+    const deletedIds = selectedIds.filter((id) => !failedIds.includes(id));
+    if (deletedIds.length) {
+      setProducts((current) =>
+        current.filter((product) => !deletedIds.includes(product.id)),
+      );
+    }
+    if (failedIds.length) {
+      setSelectedIds(failedIds);
+      setError("Some selected products could not be deleted.");
+      return;
+    }
+    setNotice(`${deletedIds.length} products deleted.`);
+    setSelectedIds([]);
+  }
+
+  async function resetProductIds() {
+    const response = await fetch("/api/products/reset-codes", {
+      method: "POST",
+    });
+    const result = (await response.json()) as Product[] | { error?: string };
+    if (!response.ok) {
+      setError(
+        (result as { error?: string }).error ?? "Could not reset product IDs.",
+      );
+      return;
+    }
+    setProducts(result as Product[]);
+    setNotice("Product IDs reset.");
+  }
 
   function openEditor(product?: Product) {
     setEditing(
@@ -210,12 +296,12 @@ export function AdminDashboard({
 
   return (
     <main className="bg-paper text-ink min-h-screen lg:flex">
-      <aside className="border-line bg-panel flex items-center justify-between border-b px-5 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:w-64 lg:flex-col lg:items-stretch lg:border-r lg:border-b-0 lg:px-5 lg:py-7">
+      <aside className="border-line bg-panel flex items-center justify-between border-b px-5 py-4 lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:w-64 lg:flex-col lg:items-stretch lg:justify-start lg:gap-10 lg:border-r lg:border-b-0 lg:px-5 lg:py-7">
         <Link className="flex items-center gap-2.5" href="/">
           <span className="bg-forest text-leaf grid size-9 place-items-center rounded-xl text-[10px] font-bold">
             {BRAND.shortName}
           </span>
-          <span className="font-display text-xl">
+          <span className="font-sans text-xl font-semibold">
             <span className="text-forest">{BRAND.name.split(" ")[0]}</span>{" "}
             <span className="text-leaf">
               {BRAND.name.split(" ").slice(1).join(" ")}
@@ -245,12 +331,17 @@ export function AdminDashboard({
             View storefront
           </Link>
         </nav>
-        <div className="border-line hidden items-center gap-3 border-t pt-5 lg:flex">
-          <span className="bg-leaf font-display text-forest grid size-9 place-items-center rounded-full">
+        <div className="border-line mt-auto hidden items-center gap-3 border-t pt-5 lg:flex">
+          <span className="bg-leaf text-forest grid size-9 place-items-center rounded-full font-sans">
             {BRAND.name.charAt(0).toUpperCase()}
           </span>
           <span className="min-w-0 flex-1">
-            <strong className="block truncate text-xs"><span className="text-forest">{BRAND.name.split(" ")[0]}</span>{" "}<span className="text-leaf">{BRAND.name.split(" ").slice(1).join(" ")}</span></strong>
+            <strong className="block truncate text-xs">
+              <span className="text-forest">{BRAND.name.split(" ")[0]}</span>{" "}
+              <span className="text-leaf">
+                {BRAND.name.split(" ").slice(1).join(" ")}
+              </span>
+            </strong>
             <small className="text-muted mt-0.5 block text-[10px]">
               Store administrator
             </small>
@@ -302,79 +393,50 @@ export function AdminDashboard({
                 Manage fabric listings, pricing, and availability.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
               <button
-                className="border-ink/35 text-forest hover:border-forest hover:bg-leaf/30 h-11 rounded-full border px-4 text-xs font-semibold transition"
+                className="border-ink/35 text-forest hover:border-forest hover:bg-leaf/30 h-11 w-full rounded-xl border px-4 text-xs font-semibold transition sm:w-auto sm:rounded-full"
                 onClick={() => setManageOptions(true)}
               >
                 Manage categories & badges
               </button>
               <button
-                className="group bg-forest hover:bg-ink hover:shadow-forest/15 inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-xs font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98]"
+                className="border-line text-muted h-11 w-full rounded-xl border px-4 text-xs font-semibold sm:w-auto sm:rounded-full"
+                onClick={() => setConfirmResetIds(true)}
+              >
+                Reset product IDs
+              </button>
+              <button
+                className="group bg-forest hover:bg-ink hover:shadow-forest/15 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-xs font-bold text-white transition-all active:scale-[.98] sm:w-auto sm:rounded-full sm:hover:-translate-y-0.5 sm:hover:shadow-lg"
                 onClick={() => openEditor()}
               >
-                <FiPlus className="text-leaf" aria-hidden="true" /> Add a product
+                <FiPlus className="text-leaf" aria-hidden="true" /> Add a
+                product
               </button>
             </div>
           </div>
 
-          <div className="mb-6 grid gap-3 sm:grid-cols-3">
-            <div className="border-line bg-panel rounded-2xl border p-4 sm:p-5">
-              <span className="text-muted text-[9px] font-bold tracking-[0.15em]">
-                ALL PRODUCTS
-              </span>
-              <strong className="font-display mt-3 block text-3xl">
-                {products.length.toString().padStart(2, "0")}
-              </strong>
-              <small className="text-muted mt-1 block text-[10px]">
-                In your collection
-              </small>
-            </div>
-            <div className="border-line bg-panel rounded-2xl border p-4 sm:p-5">
-              <span className="text-muted text-[9px] font-bold tracking-[0.15em]">
-                LIVE IN SHOP
-              </span>
-              <strong className="font-display mt-3 block text-3xl">
-                {products
-                  .filter((product) => product.active)
-                  .length.toString()
-                  .padStart(2, "0")}
-              </strong>
-              <small className="text-muted mt-1 block text-[10px]">
-                Visible to everyone
-              </small>
-            </div>
-            <div className="bg-leaf/65 flex min-h-28 flex-col justify-between rounded-2xl p-4 sm:p-5">
-              <span className="text-forest text-[9px] font-bold tracking-[0.15em]">
-                A LITTLE REMINDER
-              </span>
-              <strong className="font-display mt-4 text-xl">
-                Good finds deserve a fresh look.
-              </strong>
-              <small className="text-forest/70 mt-1 text-[10px]">
-                Update your edit whenever inspiration strikes.
-              </small>
-            </div>
-          </div>
-
-          <section className="border-line bg-panel overflow-hidden rounded-2xl border">
-            <div className="border-line flex flex-col gap-4 border-b px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <section className="border-line bg-panel relative rounded-2xl border">
+            <div className="border-line flex flex-col gap-4 border-b px-4 py-5 md:flex-row md:items-center md:justify-between md:px-6">
               <div>
                 <h2 className="font-display text-2xl">
                   All the good things{" "}
                   <span className="bg-paper text-muted ml-1 rounded-full px-2 py-1 align-middle font-sans text-[10px]">
                     {filtered.length}
                   </span>
+                  <span className="text-forest ml-2 align-middle font-sans text-xs font-semibold">
+                    Live {products.filter((product) => product.active).length}
+                  </span>
                 </h2>
                 <p className="text-muted mt-1 text-[10px] sm:text-xs">
                   Search and manage your catalog.
                 </p>
               </div>
-              <div className="flex gap-2">
-                <label className="border-line text-muted focus-within:border-forest flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border px-3 sm:w-48 sm:flex-none">
+              <div className="flex min-w-0 flex-col gap-2 md:w-[34rem] md:flex-row">
+                <label className="border-line text-muted focus-within:border-forest flex h-12 w-full min-w-0 flex-1 items-center gap-2 rounded-xl border px-3 md:min-w-48 md:rounded-full">
                   <FiSearch aria-hidden="true" />
                   <input
-                    className="text-ink placeholder:text-muted min-w-0 flex-1 bg-transparent text-[11px] outline-none"
+                    className="text-ink placeholder:text-muted min-w-0 flex-1 bg-transparent text-[11px] outline-none h-[inherit]"
                     aria-label="Search name or product ID"
                     placeholder="Search name or product ID"
                     value={search}
@@ -384,34 +446,36 @@ export function AdminDashboard({
                     }}
                   />
                 </label>
-                <CustomSelect
-                  className="border-line text-ink focus:border-forest h-10 max-w-36 rounded-full border bg-white px-3 text-[10px] outline-none sm:max-w-none sm:text-xs"
-                  aria-label="Filter category"
-                  value={filter}
-                  onChange={(event) => {
-                    setFilter(event.target.value);
-                    setPage(1);
-                  }}
-                >
-                  {categories.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </CustomSelect>
-                <CustomSelect
-                  className="border-line text-ink h-10 max-w-36 rounded-full border bg-white px-3 text-[10px] sm:text-xs"
-                  aria-label="Filter badge"
-                  value={badgeFilter}
-                  onChange={(event) => {
-                    setBadgeFilter(event.target.value);
-                    setPage(1);
-                  }}
-                >
-                  {["All badges", ...catalogOptions.badges].map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </CustomSelect>
+                <div className="grid min-w-0 grid-cols-2 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                  <CustomSelect
+                    className="h-12 w-full text-[11px] sm:text-xs"
+                    aria-label="Filter category"
+                    value={filter}
+                    onChange={(value) => {
+                      setFilter(value);
+                      setPage(1);
+                    }}
+                  >
+                    {categories.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </CustomSelect>
+                  <CustomSelect
+                    className="h-12 w-full text-[11px] sm:text-xs"
+                    aria-label="Filter badge"
+                    value={badgeFilter}
+                    onChange={(value) => {
+                      setBadgeFilter(value);
+                      setPage(1);
+                    }}
+                  >
+                    {["All badges", ...catalogOptions.badges].map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </CustomSelect>
+                </div>
               </div>
             </div>
 
@@ -444,6 +508,46 @@ export function AdminDashboard({
                   <FiX aria-hidden="true" />
                 </button>
               </p>
+            )}
+
+            {selectedIds.length > 0 && (
+              <div className="border-line bg-leaf/20 grid grid-cols-1 gap-4 border-b px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3">
+                  <strong className="shrink-0 text-xs">
+                    {selectedIds.length} selected
+                  </strong>
+                  <label className="flex items-center gap-2 text-xs">
+                    Discount %
+                    <input
+                      className="border-line h-10 w-20 rounded-xl border bg-white px-3 text-xs"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={bulkPercent}
+                      onChange={(event) => setBulkPercent(event.target.value)}
+                    />
+                  </label>
+                  <button
+                    className="bg-forest h-10 rounded-xl px-4 text-xs font-semibold whitespace-nowrap text-white sm:rounded-full"
+                    onClick={applyBulkDiscount}
+                  >
+                    Apply discount
+                  </button>
+                  <button
+                    className="text-muted h-10 px-2 text-xs whitespace-nowrap"
+                    onClick={() => setSelectedIds([])}
+                  >
+                    Clear selection
+                  </button>
+                </div>
+                <button
+                  className="h-10 justify-self-end rounded-xl bg-red-700 px-4 text-xs font-semibold whitespace-nowrap text-white hover:bg-red-800 sm:rounded-full"
+                  onClick={() => setConfirmDeleteSelected(true)}
+                >
+                  Delete selected
+                </button>
+              </div>
             )}
 
             {visible.length ? (
@@ -521,7 +625,7 @@ export function AdminDashboard({
                                   {product.name}
                                 </strong>
                                 <small className="text-muted mt-1 block text-[10px]">
-                                  {product.productCode ?? "ET----"} ·{" "}
+                                  {product.productCode ?? "FE----"} ·{" "}
                                   {product.badge || "No badge"}
                                 </small>
                               </span>
@@ -533,15 +637,19 @@ export function AdminDashboard({
                             </span>
                           </td>
                           <td>
-                            <strong className="block text-xs">
-                              {priceFormat.format(product.price)}
-                            </strong>
-                            <del className="text-muted mt-1 block text-[10px]">
-                              {priceFormat.format(product.originalPrice)}
-                            </del>
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              <strong className="text-xs">
+                                {priceFormat.format(product.price)}
+                              </strong>
+                              <del className="text-muted text-[10px]">
+                                {priceFormat.format(product.originalPrice)}
+                              </del>
+                            </div>
                           </td>
                           <td>
-                            <span className="text-forest rounded-full bg-leaf/35 px-2.5 py-1.5 text-[10px] font-bold">{product.discountPercent}% off</span>
+                            <span className="text-forest bg-leaf/35 rounded-full px-2.5 py-1.5 text-[10px] font-bold">
+                              {product.discountPercent}% off
+                            </span>
                           </td>
                           <td>
                             <button
@@ -556,6 +664,34 @@ export function AdminDashboard({
                           </td>
                           <td className="pr-6">
                             <div className="flex justify-end gap-2">
+                              {selectedIds.includes(product.id) && (
+                                <button
+                                  className={`border-line grid size-8 place-items-center rounded-full border transition-colors ${copiedProductId === product.id ? "border-forest bg-leaf/40 text-forest" : "text-muted"}`}
+                                  onClick={() =>
+                                    void copyProductDetails(product)
+                                  }
+                                  aria-label={`Copy ${product.name}`}
+                                  title={
+                                    copiedProductId === product.id
+                                      ? "Copied"
+                                      : "Copy product details"
+                                  }
+                                >
+                                  {copiedProductId === product.id ? (
+                                    <FiCheck aria-hidden="true" />
+                                  ) : (
+                                    <FiCopy aria-hidden="true" />
+                                  )}
+                                </button>
+                              )}
+                              {copiedProductId === product.id && (
+                                <span
+                                  className="text-forest text-[10px] font-semibold"
+                                  role="status"
+                                >
+                                  Copied
+                                </span>
+                              )}
                               <button
                                 className="border-line hover:border-forest hover:bg-forest rounded-full border px-3 py-2 text-[10px] font-semibold transition-all hover:text-white"
                                 onClick={() => openEditor(product)}
@@ -576,37 +712,6 @@ export function AdminDashboard({
                     </tbody>
                   </table>
                 </div>
-                {selectedIds.length > 0 && (
-                  <div className="border-line bg-leaf/20 flex flex-wrap items-center gap-3 border-t px-5 py-3">
-                    <strong className="text-xs">
-                      {selectedIds.length} selected
-                    </strong>
-                    <label className="flex items-center gap-2 text-xs">
-                      Discount %
-                      <input
-                        className="border-line w-20 rounded-lg border bg-white px-2 py-2"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={bulkPercent}
-                        onChange={(event) => setBulkPercent(event.target.value)}
-                      />
-                    </label>
-                    <button
-                      className="bg-forest rounded-full px-4 py-2 text-xs font-semibold text-white transition hover:-translate-y-0.5"
-                      onClick={applyBulkDiscount}
-                    >
-                      Apply discount
-                    </button>
-                    <button
-                      className="text-muted px-2 text-xs"
-                      onClick={() => setSelectedIds([])}
-                    >
-                      Clear selection
-                    </button>
-                  </div>
-                )}
                 <div className="border-line text-muted flex flex-col gap-3 border-t px-4 py-4 text-[10px] sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <span>
                     Showing{" "}
@@ -614,24 +719,51 @@ export function AdminDashboard({
                     {Math.min(page * pageSize, filtered.length)} of{" "}
                     {filtered.length} products
                   </span>
-                  <div className="flex items-center justify-between gap-3 sm:justify-end">
-                    <button
-                      className="border-ink/25 text-ink hover:border-forest hover:text-forest inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-2 transition-colors disabled:cursor-default disabled:bg-paper disabled:text-muted/70"
-                      disabled={page <= 1}
-                      onClick={() => setPage(page - 1)}
-                    >
-                      <FiArrowLeft className="shrink-0" aria-hidden="true" /> <span>Previous</span>
-                    </button>
-                    <span>
-                      {page} / {pageCount}
-                    </span>
-                    <button
-                      className="border-ink/25 text-ink hover:border-forest hover:text-forest inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-2 transition-colors disabled:cursor-default disabled:bg-paper disabled:text-muted/70"
-                      disabled={page >= pageCount}
-                      onClick={() => setPage(page + 1)}
-                    >
-                      <span>Next</span> <FiArrowRight className="shrink-0" aria-hidden="true" />
-                    </button>
+                  <div className="flex flex-row justify-between gap-4 sm:gap-6">
+                    <label className="flex shrink-0 items-center justify-center gap-1.5 sm:justify-start">
+                      Rows
+                      <span className="w-20">
+                        <CustomSelect
+                          className="h-9 w-full text-xs"
+                          value={pageSize}
+                          aria-label="Rows per page"
+                          placement="top"
+                          onChange={(value) => {
+                            setPageSize(Number(value));
+                            setPage(1);
+                          }}
+                        >
+                          {[10, 20, 50, 100].map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </CustomSelect>
+                      </span>
+                    </label>
+                    <div className="flex items-center justify-center gap-2 sm:justify-end">
+                      <button
+                        className="border-ink/25 text-ink hover:border-forest hover:text-forest disabled:bg-paper disabled:text-muted/70 inline-flex h-10 items-center justify-center gap-1 rounded-xl border px-2 transition-colors disabled:cursor-default sm:rounded-full sm:px-3"
+                        disabled={page <= 1}
+                        aria-label="Previous page"
+                        onClick={() => setPage(page - 1)}
+                      >
+                        <FiArrowLeft className="shrink-0" aria-hidden="true" />
+                        <span className="hidden sm:inline">Previous</span>
+                      </button>
+                      <span className="min-w-10 text-center">
+                        {page} / {pageCount}
+                      </span>
+                      <button
+                        className="border-ink/25 text-ink hover:border-forest hover:text-forest disabled:bg-paper disabled:text-muted/70 inline-flex h-10 items-center justify-center gap-1 rounded-xl border px-2 transition-colors disabled:cursor-default sm:rounded-full sm:px-3"
+                        disabled={page >= pageCount}
+                        aria-label="Next page"
+                        onClick={() => setPage(page + 1)}
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <FiArrowRight className="shrink-0" aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </>
@@ -684,14 +816,25 @@ export function AdminDashboard({
                   {editing.id ? "Edit product" : "Add a product"}
                 </h2>
               </div>
-              <button
-                type="button"
-                className="bg-paper text-muted hover:bg-line hover:text-ink grid size-9 place-items-center rounded-full text-xl transition-colors"
-                onClick={() => setEditing(null)}
-                aria-label="Close"
-              >
-                <FiX aria-hidden="true" />
-              </button>
+              <div className="flex items-center gap-2">
+                {!editing.id && (
+                  <button
+                    type="button"
+                    className="border-line text-muted flex h-9 items-center gap-2 rounded-full border px-3 text-[10px] font-semibold"
+                    onClick={() => void pasteProduct()}
+                  >
+                    <FiClipboard aria-hidden="true" /> Paste details
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="bg-paper text-muted hover:bg-line hover:text-ink grid size-9 place-items-center rounded-full text-xl transition-colors"
+                  onClick={() => setEditing(null)}
+                  aria-label="Close"
+                >
+                  <FiX aria-hidden="true" />
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
               <label className="col-span-2 text-[10px] font-semibold">
@@ -713,8 +856,8 @@ export function AdminDashboard({
                   className="border-line focus:border-forest mt-1.5 h-11 w-full rounded-xl border bg-white px-3 text-xs font-normal outline-none"
                   required
                   value={editing.category}
-                  onChange={(event) =>
-                    setEditing({ ...editing, category: event.target.value })
+                  onChange={(value) =>
+                    setEditing({ ...editing, category: value })
                   }
                 >
                   {catalogOptions.categories.map((category) => (
@@ -728,10 +871,9 @@ export function AdminDashboard({
                 Badge <span className="text-muted font-normal">optional</span>
                 <CustomSelect
                   className="border-line focus:border-forest mt-1.5 h-11 w-full rounded-xl border bg-white px-3 text-xs font-normal outline-none"
+                  aria-label="Product badge"
                   value={editing.badge}
-                  onChange={(event) =>
-                    setEditing({ ...editing, badge: event.target.value })
-                  }
+                  onChange={(value) => setEditing({ ...editing, badge: value })}
                 >
                   <option value="">No badge</option>
                   {catalogOptions.badges.map((badge) => (
@@ -961,6 +1103,30 @@ export function AdminDashboard({
             const product = productToDelete;
             setProductToDelete(null);
             void removeProduct(product);
+          }}
+        />
+      )}
+      {confirmDeleteSelected && (
+        <ConfirmDialog
+          title={`Delete ${selectedIds.length} selected products?`}
+          description="These products will be removed from the catalog. This action cannot be undone."
+          confirmLabel="Delete selected"
+          onCancel={() => setConfirmDeleteSelected(false)}
+          onConfirm={() => {
+            setConfirmDeleteSelected(false);
+            void deleteSelected();
+          }}
+        />
+      )}
+      {confirmResetIds && (
+        <ConfirmDialog
+          title="Reset product IDs?"
+          description="All product IDs will be reassigned in order, starting with FE0001."
+          confirmLabel="Reset IDs"
+          onCancel={() => setConfirmResetIds(false)}
+          onConfirm={() => {
+            setConfirmResetIds(false);
+            void resetProductIds();
           }}
         />
       )}
